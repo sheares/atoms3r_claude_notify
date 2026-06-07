@@ -19,7 +19,7 @@
 #define LCD_ROW_OFFSET  1
 
 // ─── RGB565 colour helpers ────────────────────────────────────────────────────
-#define RGB565(r, g, b)  ((uint16_t)(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)))
+#define RGB565(r, g, b)  ((uint16_t)(((b & 0xF8) << 8) | ((g & 0xFC) << 3) | (r >> 3)))
 
 #define COLOR_BLACK      0x0000
 #define COLOR_WHITE      0xFFFF
@@ -38,6 +38,8 @@
 void     gc9107_init(void);
 // Push the full framebuffer to the display — call once per frame after drawing.
 void     gc9107_flush(void);
+// Set screen rotation: 0=normal, 1=90°CW, 2=180°, 3=270°CW.
+void     gc9107_set_rotation(uint8_t rot);
 
 void     gc9107_fill_screen(uint16_t color);
 void     gc9107_fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);

@@ -17,6 +17,10 @@ static spi_device_handle_t s_spi;
 // All draw functions write here; gc9107_flush() sends it to the display in one shot.
 static uint8_t s_fb[LCD_WIDTH * LCD_HEIGHT * 2];
 
+// Rotation state: 0=normal, 1=90°CW, 2=180°, 3=270°CW
+static uint8_t s_rotation = 3;
+static uint8_t s_fb_tx[LCD_WIDTH * LCD_HEIGHT * 2];  // scratch for rotated output
+
 // ─── Init command table ───────────────────────────────────────────────────────
 // Format: { cmd, {data bytes...}, num_data_bytes }
 // Special num_data_bytes values:
@@ -190,10 +194,34 @@ void gc9107_init(void)
     ESP_LOGI(TAG, "GC9107 initialised (%dx%d)", LCD_WIDTH, LCD_HEIGHT);
 }
 
+void gc9107_set_rotation(uint8_t rot)
+{
+    s_rotation = rot & 3;
+}
+
 void gc9107_flush(void)
 {
     lcd_set_window(0, 0, LCD_WIDTH - 1, LCD_HEIGHT - 1);
-    lcd_write_bytes(s_fb, sizeof(s_fb));
+    if (s_rotation == 0) {
+        lcd_write_bytes(s_fb, sizeof(s_fb));
+        return;
+    }
+    for (int y = 0; y < LCD_HEIGHT; y++) {
+        for (int x = 0; x < LCD_WIDTH; x++) {
+            int sx, sy;
+            switch (s_rotation) {
+            case 1: sx = y;                sy = LCD_HEIGHT - 1 - x; break; // 90° CW
+            case 2: sx = LCD_WIDTH  - 1 - x; sy = LCD_HEIGHT - 1 - y; break; // 180°
+            case 3: sx = LCD_WIDTH  - 1 - y; sy = x;                  break; // 270° CW
+            default: sx = x; sy = y; break;
+            }
+            int si = (sy * LCD_WIDTH + sx) * 2;
+            int di = (y  * LCD_WIDTH + x ) * 2;
+            s_fb_tx[di]     = s_fb[si];
+            s_fb_tx[di + 1] = s_fb[si + 1];
+        }
+    }
+    lcd_write_bytes(s_fb_tx, sizeof(s_fb_tx));
 }
 
 void gc9107_fill_screen(uint16_t color)

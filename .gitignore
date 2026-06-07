@@ -5,3 +5,4 @@ dependencies.lock
 main/secrets.h
 sdkconfig
 sdkconfig.old
+.DS_Store
